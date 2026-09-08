@@ -33,6 +33,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNodeActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNotificationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerScreenIntrospectionTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSemanticRouteTool
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSharingTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSystemActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerTextInputTools
@@ -277,7 +278,13 @@ object McpIntegrationTestHelper {
             toolNamePrefix,
             perms,
         )
-        registerTouchActionTools(registrar, deps.actionExecutor, toolNamePrefix, perms)
+        registerTouchActionTools(
+            registrar,
+            deps.actionExecutor,
+            deps.accessibilityServiceProvider,
+            toolNamePrefix,
+            perms,
+        )
         registerGestureTools(registrar, deps.actionExecutor, toolNamePrefix, perms)
         registerInteractionToolBundle(registrar, deps, toolNamePrefix, perms)
         registerNonAccessibilityTools(registrar, deps, toolNamePrefix, perms)
@@ -298,6 +305,16 @@ object McpIntegrationTestHelper {
             deps.nodeCache,
             deps.privacyToolGate,
             deps.placeholderSubstitutor,
+            toolNamePrefix,
+            perms,
+        )
+        registerSemanticRouteTool(
+            registrar,
+            deps.treeParser,
+            deps.elementFinder,
+            deps.actionExecutor,
+            deps.accessibilityServiceProvider,
+            deps.nodeCache,
             toolNamePrefix,
             perms,
         )

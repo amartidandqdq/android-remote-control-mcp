@@ -90,6 +90,7 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
                 ToolEntry("long_press", "Long Press"),
                 ToolEntry("double_tap", "Double Tap"),
                 ToolEntry("swipe", "Swipe"),
+                ToolEntry("swipe_region", "Swipe Region"),
                 ToolEntry("scroll", "Scroll"),
             ),
         ),
@@ -108,6 +109,7 @@ private val ALL_TOOL_CATEGORIES: List<ToolCategory> =
                 ToolEntry("long_click_node", "Long Click Node"),
                 ToolEntry("tap_node", "Tap Node"),
                 ToolEntry("scroll_to_node", "Scroll to Node"),
+                ToolEntry("run_semantic_route", "Run Semantic Route"),
             ),
         ),
         ToolCategory(

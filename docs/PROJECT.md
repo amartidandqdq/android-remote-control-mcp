@@ -199,7 +199,7 @@ Tool errors are returned as `CallToolResult(isError = true)` with an error messa
 
 ## MCP Tools Specification
 
-The MCP server exposes 57 tools across 14 categories. For full JSON-RPC schemas, detailed usage examples, and implementation notes, see [MCP_TOOLS.md](MCP_TOOLS.md).
+The MCP server exposes 59 tools across 14 categories. For full JSON-RPC schemas, detailed usage examples, and implementation notes, see [MCP_TOOLS.md](MCP_TOOLS.md).
 
 > **Tool Naming Convention**: All tool names are prefixed with `android_` by default (e.g., `android_tap`, `android_find_nodes`). When a device slug is configured (e.g., `pixel7`), the prefix becomes `android_pixel7_` (e.g., `android_pixel7_tap`). See [MCP_TOOLS.md](MCP_TOOLS.md) for details.
 
@@ -213,7 +213,7 @@ The MCP server exposes 57 tools across 14 categories. For full JSON-RPC schemas,
 
 **Note**: `android_get_screen_state` returns a filtered flat TSV list — structural-only nodes (no text, no contentDescription, no resourceId, not interactive) are omitted. Text and contentDescription are truncated to 100 characters; use `android_get_node_details` to retrieve full values. Flags use comma-separated abbreviations with a legend in the TSV notes. When screenshot is included, it is annotated with red bounding boxes and node ID labels for on-screen nodes.
 
-### 2. Touch Action Tools (5 tools)
+### 2. Touch Action Tools (6 tools)
 
 | Tool | Description | Required Params | Optional Params |
 |------|-------------|-----------------|-----------------|
@@ -221,11 +221,12 @@ The MCP server exposes 57 tools across 14 categories. For full JSON-RPC schemas,
 | `android_long_press` | Long press at coordinates | `x` (number), `y` (number) | `duration` (number, ms, default 1000) |
 | `android_double_tap` | Double tap at coordinates | `x` (number), `y` (number) | — |
 | `android_swipe` | Swipe from point A to B | `x1`, `y1`, `x2`, `y2` (all number) | `duration` (number, ms, default 300) |
+| `android_swipe_region` | Repeat a vertical swipe in a semantic screen region | `region` (left/center/right), `direction` (up/down) | `distance`, `repeat`, `duration` |
 | `android_scroll` | Scroll in direction | `direction` (string: up/down/left/right) | `amount` (string: small/medium/large, default medium), `variance` (number: 0-20, default 5) |
 
 **Errors**: Returns `CallToolResult(isError = true)` if accessibility not enabled or action execution failed.
 
-### 3. Node Action Tools (5 tools)
+### 3. Node Action Tools (6 tools)
 
 | Tool | Description | Required Params | Optional Params |
 |------|-------------|-----------------|-----------------|
@@ -234,6 +235,7 @@ The MCP server exposes 57 tools across 14 categories. For full JSON-RPC schemas,
 | `android_long_click_node` | Long-click an accessibility node | `node_id` (string) | — |
 | `android_tap_node` | Gesture-based tap at a random point within node bounds (unlike `android_click_node`, which uses ACTION_CLICK) | `node_id` (string) | `inset_percentage` (number: 0.0-45.0, default 5.0) |
 | `android_scroll_to_node` | Scroll to make node visible | `node_id` (string) | — |
+| `android_run_semantic_route` | Execute guarded named steps with resume and final verification | `expected_package`, `steps` | `final_assert` |
 
 **Errors**: Returns `CallToolResult(isError = true)` if node not found (ID invalid or stale) or node not clickable. `android_find_nodes` returns empty array (not error) when no matches found.
 
@@ -809,7 +811,7 @@ All common development tasks are accessible via `make <target>`. Run `make help`
 
 - **[TOOLS.md](TOOLS.md)** — Git branching conventions, commit format, PR creation, GitHub CLI commands, and local CI testing with `act`
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — Detailed application architecture: component interactions, service lifecycle diagrams, threading model, inter-service communication patterns
-- **[MCP_TOOLS.md](MCP_TOOLS.md)** — Full MCP tools documentation with JSON-RPC schemas, usage examples, error codes, and implementation notes for all 57 tools
+- **[MCP_TOOLS.md](MCP_TOOLS.md)** — Full MCP tools documentation with JSON-RPC schemas, usage examples, error codes, and implementation notes for all 59 tools
 
 ---
 

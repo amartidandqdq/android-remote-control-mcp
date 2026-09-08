@@ -39,6 +39,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNodeActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNotificationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerScreenIntrospectionTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSemanticRouteTool
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSharingTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSystemActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerTextInputTools
@@ -493,7 +494,7 @@ class McpServerService : Service() {
             perms,
         )
         registerSystemActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
-        registerTouchActionTools(registrar, actionExecutor, toolNamePrefix, perms)
+        registerTouchActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
         registerGestureTools(registrar, actionExecutor, toolNamePrefix, perms)
         registerNodeActionTools(
             registrar,
@@ -507,6 +508,7 @@ class McpServerService : Service() {
             toolNamePrefix,
             perms,
         )
+        registerSemanticRouteBundle(registrar, toolNamePrefix, perms)
         registerTextInputTools(
             registrar,
             treeParser,
@@ -527,6 +529,23 @@ class McpServerService : Service() {
             nodeCache,
             privacyToolGate,
             placeholderSubstitutor,
+            toolNamePrefix,
+            perms,
+        )
+    }
+
+    private fun registerSemanticRouteBundle(
+        registrar: LoggedToolRegistrar,
+        toolNamePrefix: String,
+        perms: ToolPermissionsConfig,
+    ) {
+        registerSemanticRouteTool(
+            registrar,
+            treeParser,
+            elementFinder,
+            actionExecutor,
+            accessibilityServiceProvider,
+            nodeCache,
             toolNamePrefix,
             perms,
         )
