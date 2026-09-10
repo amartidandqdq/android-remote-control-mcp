@@ -469,7 +469,17 @@ class McpServerService : Service() {
             perms,
         )
         registerLocationTools(registrar, locationProvider, privacyToolGate, toolNamePrefix, perms)
-        registerSharingBundle(registrar, toolNamePrefix, perms, fileSizeLimitMb)
+        registerSharingTools(
+            registrar,
+            sharedContentInbox,
+            ephemeralFileLinkService,
+            fileOperationProvider,
+            fileSizeLimitMb,
+            currentBaseUrl,
+            privacyToolGate,
+            toolNamePrefix,
+            perms,
+        )
     }
 
     private fun registerAccessibilityToolBundle(
@@ -496,19 +506,7 @@ class McpServerService : Service() {
         registerSystemActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
         registerTouchActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
         registerGestureTools(registrar, actionExecutor, toolNamePrefix, perms)
-        registerNodeActionTools(
-            registrar,
-            treeParser,
-            elementFinder,
-            actionExecutor,
-            accessibilityServiceProvider,
-            nodeCache,
-            privacyToolGate,
-            placeholderSubstitutor,
-            toolNamePrefix,
-            perms,
-        )
-        registerSemanticRouteBundle(registrar, toolNamePrefix, perms)
+        registerNodeInteractionBundle(registrar, toolNamePrefix, perms)
         registerTextInputTools(
             registrar,
             treeParser,
@@ -534,11 +532,23 @@ class McpServerService : Service() {
         )
     }
 
-    private fun registerSemanticRouteBundle(
+    private fun registerNodeInteractionBundle(
         registrar: LoggedToolRegistrar,
         toolNamePrefix: String,
         perms: ToolPermissionsConfig,
     ) {
+        registerNodeActionTools(
+            registrar,
+            treeParser,
+            elementFinder,
+            actionExecutor,
+            accessibilityServiceProvider,
+            nodeCache,
+            privacyToolGate,
+            placeholderSubstitutor,
+            toolNamePrefix,
+            perms,
+        )
         registerSemanticRouteTool(
             registrar,
             treeParser,
@@ -546,25 +556,6 @@ class McpServerService : Service() {
             actionExecutor,
             accessibilityServiceProvider,
             nodeCache,
-            toolNamePrefix,
-            perms,
-        )
-    }
-
-    private fun registerSharingBundle(
-        registrar: LoggedToolRegistrar,
-        toolNamePrefix: String,
-        perms: ToolPermissionsConfig,
-        fileSizeLimitMb: Int,
-    ) {
-        registerSharingTools(
-            registrar,
-            sharedContentInbox,
-            ephemeralFileLinkService,
-            fileOperationProvider,
-            fileSizeLimitMb,
-            currentBaseUrl,
-            privacyToolGate,
             toolNamePrefix,
             perms,
         )
