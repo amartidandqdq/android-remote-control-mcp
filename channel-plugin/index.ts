@@ -17,7 +17,7 @@ const ENV_FILE = join(STATE_DIR, ".env");
 try {
   if (existsSync(ENV_FILE)) {
     chmodSync(ENV_FILE, 0o600);
-    for (const line of readFileSync(ENV_FILE, "utf8").split("\n")) {
+    for (const line of readFileSync(ENV_FILE, "utf8").split(/\r?\n/)) {
       const m = line.match(/^(\w+)=(.*)$/);
       if (m && process.env[m[1]] === undefined) {
         process.env[m[1]] = m[2];
