@@ -1,11 +1,14 @@
 package com.danielealbano.androidremotecontrolmcp.mcp.tools
 
 import com.danielealbano.androidremotecontrolmcp.mcp.McpToolException
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.AccessibilityServiceProvider
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutor
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScreenInfo
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollAmount
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollDirection
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
 import io.modelcontextprotocol.kotlin.sdk.types.TextContent
@@ -534,6 +537,73 @@ class TouchActionToolsTest {
                 assertThrows<McpToolException.PermissionDenied> {
                     tool.execute(params)
                 }
+            }
+    }
+
+    @Nested
+    @DisplayName("SwipeRegionTool")
+    inner class SwipeRegionToolTests {
+        private val accessibilityServiceProvider = mockk<AccessibilityServiceProvider>()
+        private val screenInfo = ScreenInfo(1440, 3200, 450, "portrait")
+        private lateinit var tool: SwipeRegionTool
+
+        @BeforeEach
+        fun setUp() {
+            every { accessibilityServiceProvider.getScreenInfo() } returns screenInfo
+            tool = SwipeRegionTool(actionExecutor, accessibilityServiceProvider)
+        }
+
+        @Test
+        fun `swipes the right region upward without caller coordinates`() =
+            runTest {
+                coEvery { actionExecutor.swipe(1080f, 2400f, 1080f, 1760f, 500L) } returns Result.success(Unit)
+
+                val result =
+                    tool.execute(
+                        buildJsonObject {
+                            put("region", "right")
+                            put("direction", "up")
+                            put("distance", "medium")
+                            put("duration", 500)
+                        },
+                    )
+
+                assertTrue(extractTextContent(result).contains("right region"))
+                coVerify(exactly = 1) { actionExecutor.swipe(1080f, 2400f, 1080f, 1760f, 500L) }
+            }
+
+        @Test
+        fun `repeats a calibrated gesture`() =
+            runTest {
+                coEvery { actionExecutor.swipe(any(), any(), any(), any(), any()) } returns Result.success(Unit)
+
+                tool.execute(
+                    buildJsonObject {
+                        put("region", "center")
+                        put("direction", "down")
+                        put("distance", "small")
+                        put("repeat", 3)
+                    },
+                )
+
+                coVerify(exactly = 3) { actionExecutor.swipe(720f, 1888f, 720f, 2272f, 300L) }
+            }
+
+        @Test
+        fun `rejects an excessive repeat count`() =
+            runTest {
+                val error =
+                    assertThrows<McpToolException.InvalidParams> {
+                        tool.execute(
+                            buildJsonObject {
+                                put("region", "right")
+                                put("direction", "up")
+                                put("repeat", 21)
+                            },
+                        )
+                    }
+
+                assertTrue(error.message!!.contains("repeat"))
             }
     }
 

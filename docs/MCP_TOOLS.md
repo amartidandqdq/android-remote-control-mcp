@@ -34,7 +34,7 @@ This document provides a comprehensive reference for all MCP tools available in 
 
 ## Overview
 
-The MCP server exposes 57 tools via the JSON-RPC 2.0 protocol, organized into 14 categories:
+The MCP server exposes 59 tools via the JSON-RPC 2.0 protocol, organized into 14 categories:
 
 | Category | Tools | Plan |
 |----------|-------|------|
@@ -844,6 +844,25 @@ Performs a swipe gesture from one point to another.
 
 ---
 
+### `android_swipe_region`
+
+Performs one or more vertical swipes in a named screen region. The server derives the gesture from
+the current display size, so callers do not need to retain device-specific pixel coordinates. This
+is useful for wheels and carousels whose contents are not exposed as accessibility nodes.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `region` | string | Yes | - | `left`, `center`, or `right` |
+| `direction` | string | Yes | - | Finger movement: `up` or `down` |
+| `distance` | string | No | `medium` | `small`, `medium`, or `large` |
+| `repeat` | integer | No | 1 | Number of gestures, from 1 to 20 |
+| `duration` | number | No | 300 | Duration of each swipe in ms |
+
+The tool returns a generated confirmation only. Read the screen afterward to verify the selected
+value, using a screenshot when the control is graphical or inside a WebView.
+
+---
+
 ### `android_scroll`
 
 Scrolls the screen in the specified direction. Calculates scroll distance as a percentage of screen dimension based on the amount parameter. Applies random variance to scroll distance and center point for more natural-looking gestures.
@@ -1252,6 +1271,33 @@ curl -X POST http://localhost:8080/mcp \
 - **Permission denied**: Accessibility service not enabled
 - **Node not found**: Node not found
 - **Action failed**: No scrollable container found, scroll failed, or node not visible after max attempts (5)
+
+---
+
+### `android_run_semantic_route`
+
+Executes up to 30 named UI actions in one MCP call. `expected_package` is checked before every
+step, and the accessibility tree is reacquired before every node action. Supported actions are
+`click`, `tap`, `wait`, `assert`, `back`, and `swipe_region`.
+
+Each named step accepts `by`, `value`, `exact_match`, and `occurrence`. A `skip_if` matcher lets a
+route resume when its next screen is already visible. `final_assert` verifies the destination. The
+response includes the number of executed and skipped steps, the final activity, and a short screen
+fingerprint that can be kept in memory for the current session.
+
+```json
+{
+  "expected_package": "com.example.app",
+  "steps": [
+    { "action": "click", "value": "Settings", "skip_if": { "value": "Automation" } },
+    { "action": "wait", "value": "Automation", "timeout": 3000 }
+  ],
+  "final_assert": { "value": "Automation" }
+}
+```
+
+The route stops immediately if the focused package differs from `expected_package`, a named node
+is missing, a gesture fails, or the final assertion is not satisfied.
 
 ---
 

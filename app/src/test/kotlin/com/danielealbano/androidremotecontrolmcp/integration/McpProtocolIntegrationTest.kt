@@ -135,7 +135,7 @@ class McpProtocolIntegrationTest {
         }
 
     companion object {
-        private const val EXPECTED_TOOL_COUNT = 57
+        private const val EXPECTED_TOOL_COUNT = 59
 
         private val EXPECTED_TOOL_NAMES =
             setOf(
@@ -144,6 +144,7 @@ class McpProtocolIntegrationTest {
                 "android_long_press",
                 "android_double_tap",
                 "android_swipe",
+                "android_swipe_region",
                 "android_scroll",
                 // Gestures
                 "android_pinch",
@@ -154,6 +155,7 @@ class McpProtocolIntegrationTest {
                 "android_long_click_node",
                 "android_tap_node",
                 "android_scroll_to_node",
+                "android_run_semantic_route",
                 // Screen introspection
                 "android_get_screen_state",
                 // System actions

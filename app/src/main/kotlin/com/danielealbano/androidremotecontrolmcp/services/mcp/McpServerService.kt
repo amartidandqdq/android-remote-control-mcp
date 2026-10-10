@@ -39,6 +39,7 @@ import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerLocationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNodeActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerNotificationTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerScreenIntrospectionTools
+import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSemanticRouteTool
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSharingTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerSystemActionTools
 import com.danielealbano.androidremotecontrolmcp.mcp.tools.registerTextInputTools
@@ -468,7 +469,17 @@ class McpServerService : Service() {
             perms,
         )
         registerLocationTools(registrar, locationProvider, privacyToolGate, toolNamePrefix, perms)
-        registerSharingBundle(registrar, toolNamePrefix, perms, fileSizeLimitMb)
+        registerSharingTools(
+            registrar,
+            sharedContentInbox,
+            ephemeralFileLinkService,
+            fileOperationProvider,
+            fileSizeLimitMb,
+            currentBaseUrl,
+            privacyToolGate,
+            toolNamePrefix,
+            perms,
+        )
     }
 
     private fun registerAccessibilityToolBundle(
@@ -493,20 +504,9 @@ class McpServerService : Service() {
             perms,
         )
         registerSystemActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
-        registerTouchActionTools(registrar, actionExecutor, toolNamePrefix, perms)
+        registerTouchActionTools(registrar, actionExecutor, accessibilityServiceProvider, toolNamePrefix, perms)
         registerGestureTools(registrar, actionExecutor, toolNamePrefix, perms)
-        registerNodeActionTools(
-            registrar,
-            treeParser,
-            elementFinder,
-            actionExecutor,
-            accessibilityServiceProvider,
-            nodeCache,
-            privacyToolGate,
-            placeholderSubstitutor,
-            toolNamePrefix,
-            perms,
-        )
+        registerNodeInteractionBundle(registrar, toolNamePrefix, perms)
         registerTextInputTools(
             registrar,
             treeParser,
@@ -532,20 +532,30 @@ class McpServerService : Service() {
         )
     }
 
-    private fun registerSharingBundle(
+    private fun registerNodeInteractionBundle(
         registrar: LoggedToolRegistrar,
         toolNamePrefix: String,
         perms: ToolPermissionsConfig,
-        fileSizeLimitMb: Int,
     ) {
-        registerSharingTools(
+        registerNodeActionTools(
             registrar,
-            sharedContentInbox,
-            ephemeralFileLinkService,
-            fileOperationProvider,
-            fileSizeLimitMb,
-            currentBaseUrl,
+            treeParser,
+            elementFinder,
+            actionExecutor,
+            accessibilityServiceProvider,
+            nodeCache,
             privacyToolGate,
+            placeholderSubstitutor,
+            toolNamePrefix,
+            perms,
+        )
+        registerSemanticRouteTool(
+            registrar,
+            treeParser,
+            elementFinder,
+            actionExecutor,
+            accessibilityServiceProvider,
+            nodeCache,
             toolNamePrefix,
             perms,
         )
