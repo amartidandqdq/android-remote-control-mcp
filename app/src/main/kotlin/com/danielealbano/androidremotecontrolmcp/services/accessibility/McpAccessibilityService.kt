@@ -189,8 +189,34 @@ class McpAccessibilityService : AccessibilityService() {
     /**
      * Returns the package name of the currently focused application,
      * or null if unknown.
+     *
+     * Prefers the live focused window (see [findFocusedWindowPackageName]) and falls back to the
+     * package reported by the last [AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED]. The cached value
+     * alone is not reliable: it only changes on window-state events, so once the launcher (or any
+     * other transient window) is the last window to fire that event, it keeps reporting that package
+     * while a different app is actually in the foreground.
      */
-    fun getCurrentPackageName(): String? = currentPackageName
+    fun getCurrentPackageName(): String? = getFocusedWindowPackage() ?: currentPackageName
+
+    /**
+     * Reads the package name of the window that currently owns the focus, or null when no window is
+     * focused or its root node is unavailable. The returned window infos are recycled after use,
+     * matching the ownership contract of [getAccessibilityWindows].
+     */
+    private fun getFocusedWindowPackage(): String? {
+        val accessibilityWindows = getAccessibilityWindows()
+        if (accessibilityWindows.isEmpty()) {
+            return null
+        }
+        return try {
+            findFocusedWindowPackageName(accessibilityWindows)
+        } finally {
+            for (window in accessibilityWindows) {
+                @Suppress("DEPRECATION")
+                window.recycle()
+            }
+        }
+    }
 
     /**
      * Returns the class name (activity name) of the currently focused window,
@@ -484,3 +510,16 @@ internal fun scheduleCacheInvalidationIfNeeded(
 internal fun invalidateCache(cache: AccessibilityNodeCache?) {
     cache?.clear()
 }
+
+/**
+ * Returns the package name of the focused window in [windows], or null when no window is focused or
+ * the focused window exposes no root node.
+ *
+ * Top-level and `internal` so the resolution can be unit-tested without instantiating the service.
+ */
+internal fun findFocusedWindowPackageName(windows: List<AccessibilityWindowInfo>): String? =
+    windows
+        .firstOrNull { it.isFocused }
+        ?.root
+        ?.packageName
+        ?.toString()

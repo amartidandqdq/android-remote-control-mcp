@@ -5,6 +5,7 @@ package com.danielealbano.androidremotecontrolmcp.mcp.tools
 import android.util.Log
 import com.danielealbano.androidremotecontrolmcp.data.model.ToolPermissionsConfig
 import com.danielealbano.androidremotecontrolmcp.mcp.McpToolException
+import com.danielealbano.androidremotecontrolmcp.services.accessibility.AccessibilityServiceProvider
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ActionExecutor
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollAmount
 import com.danielealbano.androidremotecontrolmcp.services.accessibility.ScrollDirection
@@ -305,6 +306,154 @@ class SwipeTool
         }
     }
 
+/**
+ * Performs one or more swipes in a semantic screen region. This is intended for controls such as
+ * wheels and carousels where accessibility nodes are unavailable and callers should not have to
+ * retain device-specific pixel coordinates.
+ */
+class SwipeRegionTool
+    @Inject
+    constructor(
+        private val actionExecutor: ActionExecutor,
+        private val accessibilityServiceProvider: AccessibilityServiceProvider,
+    ) {
+        @Suppress("ThrowsCount")
+        suspend fun execute(arguments: JsonObject?): CallToolResult {
+            val region = McpToolUtils.requireString(arguments, "region").lowercase()
+            val direction = McpToolUtils.requireString(arguments, "direction").lowercase()
+            val distance = McpToolUtils.optionalString(arguments, "distance", "medium").lowercase()
+            val repeat = McpToolUtils.optionalInt(arguments, "repeat", 1)
+            val duration = McpToolUtils.optionalLong(arguments, "duration", DEFAULT_DURATION_MS)
+
+            val xFraction =
+                when (region) {
+                    "left" -> LEFT_X_FRACTION
+
+                    "center" -> CENTER_X_FRACTION
+
+                    "right" -> RIGHT_X_FRACTION
+
+                    else -> throw McpToolException.InvalidParams(
+                        "Parameter 'region' must be one of: left, center, right. Got: '$region'",
+                    )
+                }
+            val distanceFraction =
+                when (distance) {
+                    "small" -> SMALL_DISTANCE_FRACTION
+
+                    "medium" -> MEDIUM_DISTANCE_FRACTION
+
+                    "large" -> LARGE_DISTANCE_FRACTION
+
+                    else -> throw McpToolException.InvalidParams(
+                        "Parameter 'distance' must be one of: small, medium, large. Got: '$distance'",
+                    )
+                }
+            if (direction !in setOf("up", "down")) {
+                throw McpToolException.InvalidParams(
+                    "Parameter 'direction' must be one of: up, down. Got: '$direction'",
+                )
+            }
+            if (repeat !in 1..MAX_REPEAT) {
+                throw McpToolException.InvalidParams(
+                    "Parameter 'repeat' must be between 1 and $MAX_REPEAT, got: $repeat",
+                )
+            }
+            McpToolUtils.validatePositiveRange(duration, "duration", McpToolUtils.MAX_DURATION_MS)
+
+            val screen = accessibilityServiceProvider.getScreenInfo()
+            val x = screen.width * xFraction
+            val centerY = screen.height * CENTER_Y_FRACTION
+            val halfDistance = screen.height * distanceFraction / 2f
+            val upperY = centerY - halfDistance
+            val lowerY = centerY + halfDistance
+            val (startY, endY) = if (direction == "up") lowerY to upperY else upperY to lowerY
+
+            repeat(repeat) {
+                val result = actionExecutor.swipe(x, startY, x, endY, duration)
+                result.exceptionOrNull()?.let { exception ->
+                    return McpToolUtils.handleActionResult(
+                        Result.failure(exception),
+                        "Swipe region failed",
+                    )
+                }
+            }
+            return McpToolUtils.textResult(
+                "Swipe $direction in $region region ($distance) executed $repeat time(s) over ${duration}ms each",
+            )
+        }
+
+        fun register(
+            registrar: LoggedToolRegistrar,
+            toolNamePrefix: String,
+        ) {
+            registrar.addTool(
+                toolName = TOOL_NAME,
+                name = "$toolNamePrefix$TOOL_NAME",
+                description =
+                    "Performs repeatable vertical swipes in a named screen region without caller-provided " +
+                        "pixel coordinates. Use for wheels and carousels; verify the selected value afterward.",
+                inputSchema =
+                    ToolSchema(
+                        properties =
+                            buildJsonObject {
+                                putJsonObject("region") {
+                                    put("type", "string")
+                                    put(
+                                        "enum",
+                                        buildJsonArray {
+                                            listOf("left", "center", "right").forEach { add(JsonPrimitive(it)) }
+                                        },
+                                    )
+                                }
+                                putJsonObject("direction") {
+                                    put("type", "string")
+                                    put(
+                                        "enum",
+                                        buildJsonArray { listOf("up", "down").forEach { add(JsonPrimitive(it)) } },
+                                    )
+                                }
+                                putJsonObject("distance") {
+                                    put("type", "string")
+                                    put(
+                                        "enum",
+                                        buildJsonArray {
+                                            listOf("small", "medium", "large").forEach { add(JsonPrimitive(it)) }
+                                        },
+                                    )
+                                    put("default", "medium")
+                                }
+                                putJsonObject("repeat") {
+                                    put("type", "integer")
+                                    put("minimum", 1)
+                                    put("maximum", MAX_REPEAT)
+                                    put("default", 1)
+                                }
+                                putJsonObject("duration") {
+                                    put("type", "number")
+                                    put("description", "Duration of each swipe in ms")
+                                    put("default", DEFAULT_DURATION_MS)
+                                }
+                            },
+                        required = listOf("region", "direction"),
+                    ),
+            ) { request -> execute(request.arguments) }
+        }
+
+        companion object {
+            const val TOOL_NAME = "swipe_region"
+            private const val DEFAULT_DURATION_MS = 300L
+            private const val MAX_REPEAT = 20
+            private const val LEFT_X_FRACTION = 0.25f
+            private const val CENTER_X_FRACTION = 0.50f
+            private const val RIGHT_X_FRACTION = 0.75f
+            private const val CENTER_Y_FRACTION = 0.65f
+            private const val SMALL_DISTANCE_FRACTION = 0.12f
+            private const val MEDIUM_DISTANCE_FRACTION = 0.20f
+            private const val LARGE_DISTANCE_FRACTION = 0.30f
+        }
+    }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // scroll
 // ─────────────────────────────────────────────────────────────────────────────
@@ -448,6 +597,7 @@ class ScrollTool
 fun registerTouchActionTools(
     registrar: LoggedToolRegistrar,
     actionExecutor: ActionExecutor,
+    accessibilityServiceProvider: AccessibilityServiceProvider,
     toolNamePrefix: String,
     perms: ToolPermissionsConfig,
 ) {
@@ -455,5 +605,8 @@ fun registerTouchActionTools(
     if (perms.isToolEnabled(LongPressTool.TOOL_NAME)) LongPressTool(actionExecutor).register(registrar, toolNamePrefix)
     if (perms.isToolEnabled(DoubleTapTool.TOOL_NAME)) DoubleTapTool(actionExecutor).register(registrar, toolNamePrefix)
     if (perms.isToolEnabled(SwipeTool.TOOL_NAME)) SwipeTool(actionExecutor).register(registrar, toolNamePrefix)
+    if (perms.isToolEnabled(SwipeRegionTool.TOOL_NAME)) {
+        SwipeRegionTool(actionExecutor, accessibilityServiceProvider).register(registrar, toolNamePrefix)
+    }
     if (perms.isToolEnabled(ScrollTool.TOOL_NAME)) ScrollTool(actionExecutor).register(registrar, toolNamePrefix)
 }

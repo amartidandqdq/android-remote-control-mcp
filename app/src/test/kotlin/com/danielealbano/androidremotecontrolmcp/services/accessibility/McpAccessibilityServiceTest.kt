@@ -1,10 +1,15 @@
 package com.danielealbano.androidremotecontrolmcp.services.accessibility
 
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -104,5 +109,70 @@ class McpAccessibilityServiceTest {
         fun `is a safe no-op when the cache is null`() {
             assertDoesNotThrow { invalidateCache(null) }
         }
+    }
+
+    @Nested
+    @DisplayName("findFocusedWindowPackageName")
+    inner class FindFocusedWindowPackageName {
+        @Test
+        @DisplayName("returns the focused window package, not the first window of the list")
+        fun `returns the focused window package`() {
+            val background = window("com.google.android.apps.nexuslauncher", focused = false)
+            val foreground = window("com.tuya.smart", focused = true)
+
+            assertEquals(
+                "com.tuya.smart",
+                findFocusedWindowPackageName(listOf(background, foreground)),
+            )
+        }
+
+        @Test
+        @DisplayName("returns the focused window package even when it precedes the others")
+        fun `returns the focused window package when first`() {
+            val foreground = window("com.tuya.smart", focused = true)
+            val background = window("com.google.android.apps.nexuslauncher", focused = false)
+
+            assertEquals(
+                "com.tuya.smart",
+                findFocusedWindowPackageName(listOf(foreground, background)),
+            )
+        }
+
+        @Test
+        @DisplayName("returns null when no window is focused")
+        fun `returns null when no window is focused`() {
+            val first = window("com.tuya.smart", focused = false)
+            val second = window("com.android.systemui", focused = false)
+
+            assertNull(findFocusedWindowPackageName(listOf(first, second)))
+        }
+
+        @Test
+        @DisplayName("returns null when the focused window exposes no root node")
+        fun `returns null when the focused window has no root`() {
+            val focused = mockk<AccessibilityWindowInfo>()
+            every { focused.isFocused } returns true
+            every { focused.root } returns null
+
+            assertNull(findFocusedWindowPackageName(listOf(focused)))
+        }
+
+        @Test
+        @DisplayName("returns null for an empty window list")
+        fun `returns null for an empty list`() {
+            assertNull(findFocusedWindowPackageName(emptyList()))
+        }
+    }
+
+    private fun window(
+        packageName: String,
+        focused: Boolean,
+    ): AccessibilityWindowInfo {
+        val rootNode = mockk<AccessibilityNodeInfo>()
+        every { rootNode.packageName } returns packageName
+        val windowInfo = mockk<AccessibilityWindowInfo>()
+        every { windowInfo.isFocused } returns focused
+        every { windowInfo.root } returns rootNode
+        return windowInfo
     }
 }
